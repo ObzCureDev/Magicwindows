@@ -15,8 +15,6 @@
   const numberRow = ["29", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d"];
   const topRow    = ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1a", "1b"];
   const homeRow   = ["1e", "1f", "20", "21", "22", "23", "24", "25", "26", "27", "28", "2b"];
-  // Bottom row keys are the same for ISO and ANSI; layout differences are
-  // handled by the Left Shift width and the extra ISO key (scancode 56).
   const bottomRow = ["2c", "2d", "2e", "2f", "30", "31", "32", "33", "34", "35"];
 
   // ── Character helpers ─────────────────────────────────────────────────
@@ -41,8 +39,6 @@
     }
   }
 
-  // Returns all four corner characters for a key: [topLeft, topRight, bottomLeft, bottomRight]
-  // topLeft = shift, topRight = altgrShift, bottomLeft = base, bottomRight = altgr
   function getKeyChars(scancode: string): { tl: string; tr: string; bl: string; br: string } {
     const m = layout.keys[scancode];
     if (!m) return { tl: "", tr: "", bl: "", br: "" };
@@ -81,7 +77,6 @@
     return !!val && val.endsWith("@");
   }
 
-  // Tooltip: show Unicode codepoints for all active characters
   function getTooltip(scancode: string): string {
     const m = layout.keys[scancode];
     if (!m) return "";
@@ -106,6 +101,168 @@
 <!-- Outer wrapper handles responsive scaling -->
 <div class="kbd-scaler">
   <div class="kbd-body" role="img" aria-label="Keyboard layout preview">
+
+    <!-- ── Row 0: Function row (decorative, dimmed) ───────────────────── -->
+    <div class="kbd-row kbd-row--fn">
+      <div class="key key--fnkey" title="Escape">
+        <span class="fn-text">esc</span>
+      </div>
+
+      <!-- F1 — brightness down -->
+      <div class="key key--fnkey" title="F1 — Brightness Down">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="8" cy="8" r="1.8" fill="none" stroke="currentColor" stroke-width="1.1"/>
+          <g stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+            <line x1="8" y1="3.6" x2="8" y2="4.8"/>
+            <line x1="8" y1="11.2" x2="8" y2="12.4"/>
+            <line x1="3.6" y1="8" x2="4.8" y2="8"/>
+            <line x1="11.2" y1="8" x2="12.4" y2="8"/>
+            <line x1="4.9" y1="4.9" x2="5.7" y2="5.7"/>
+            <line x1="10.3" y1="10.3" x2="11.1" y2="11.1"/>
+            <line x1="11.1" y1="4.9" x2="10.3" y2="5.7"/>
+            <line x1="5.7" y1="10.3" x2="4.9" y2="11.1"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F1</span>
+      </div>
+
+      <!-- F2 — brightness up -->
+      <div class="key key--fnkey" title="F2 — Brightness Up">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="8" cy="8" r="2.4" fill="none" stroke="currentColor" stroke-width="1.1"/>
+          <g stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+            <line x1="8" y1="2.5" x2="8" y2="4.4"/>
+            <line x1="8" y1="11.6" x2="8" y2="13.5"/>
+            <line x1="2.5" y1="8" x2="4.4" y2="8"/>
+            <line x1="11.6" y1="8" x2="13.5" y2="8"/>
+            <line x1="4.1" y1="4.1" x2="5.4" y2="5.4"/>
+            <line x1="10.6" y1="10.6" x2="11.9" y2="11.9"/>
+            <line x1="11.9" y1="4.1" x2="10.6" y2="5.4"/>
+            <line x1="5.4" y1="10.6" x2="4.1" y2="11.9"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F2</span>
+      </div>
+
+      <!-- F3 — Mission Control -->
+      <div class="key key--fnkey" title="F3 — Mission Control">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1">
+            <rect x="2.5" y="3" width="4.5" height="3" rx="0.5"/>
+            <rect x="9" y="3" width="4.5" height="3" rx="0.5"/>
+            <rect x="2.5" y="8" width="4.5" height="5" rx="0.5"/>
+            <rect x="9" y="8" width="4.5" height="5" rx="0.5"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F3</span>
+      </div>
+
+      <!-- F4 — Spotlight -->
+      <div class="key key--fnkey" title="F4 — Spotlight">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+            <circle cx="6.8" cy="6.8" r="3.4"/>
+            <line x1="9.4" y1="9.4" x2="13" y2="13"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F4</span>
+      </div>
+
+      <!-- F5 — Dictation -->
+      <div class="key key--fnkey" title="F5 — Dictation">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="2.5" width="4" height="6.5" rx="2"/>
+            <path d="M4 8 a4 4 0 0 0 8 0"/>
+            <line x1="8" y1="12" x2="8" y2="13.5"/>
+            <line x1="6.5" y1="13.5" x2="9.5" y2="13.5"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F5</span>
+      </div>
+
+      <!-- F6 — Do Not Disturb -->
+      <div class="key key--fnkey" title="F6 — Do Not Disturb">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M12 10.5 A5 5 0 1 1 6.2 3 a4 4 0 0 0 5.8 7.5 z"
+                fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+        </svg>
+        <span class="fn-tag">F6</span>
+      </div>
+
+      <!-- F7 — Previous track -->
+      <div class="key key--fnkey" title="F7 — Previous">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <g fill="currentColor">
+            <rect x="2.5" y="4.5" width="1.3" height="7" rx="0.3"/>
+            <polygon points="13.5,4.5 13.5,11.5 8.5,8"/>
+            <polygon points="8.5,4.5 8.5,11.5 4,8"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F7</span>
+      </div>
+
+      <!-- F8 — Play/Pause -->
+      <div class="key key--fnkey" title="F8 — Play / Pause">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <g fill="currentColor">
+            <polygon points="2.5,3.5 2.5,12.5 8,8"/>
+            <rect x="9.5" y="3.5" width="1.5" height="9" rx="0.3"/>
+            <rect x="12" y="3.5" width="1.5" height="9" rx="0.3"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F8</span>
+      </div>
+
+      <!-- F9 — Next track -->
+      <div class="key key--fnkey" title="F9 — Next">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <g fill="currentColor">
+            <polygon points="2.5,4.5 2.5,11.5 7.5,8"/>
+            <polygon points="7.5,4.5 7.5,11.5 12,8"/>
+            <rect x="12.2" y="4.5" width="1.3" height="7" rx="0.3"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F9</span>
+      </div>
+
+      <!-- F10 — Mute -->
+      <div class="key key--fnkey" title="F10 — Mute">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <polygon points="2,6.2 5,6.2 8.5,3.5 8.5,12.5 5,9.8 2,9.8" fill="currentColor"/>
+          <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+            <line x1="11" y1="6" x2="14" y2="10"/>
+            <line x1="14" y1="6" x2="11" y2="10"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F10</span>
+      </div>
+
+      <!-- F11 — Volume Down -->
+      <div class="key key--fnkey" title="F11 — Volume Down">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <polygon points="2,6.2 5,6.2 8.5,3.5 8.5,12.5 5,9.8 2,9.8" fill="currentColor"/>
+          <path d="M10.8 6.2 a3 3 0 0 1 0 3.6"
+                fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        <span class="fn-tag">F11</span>
+      </div>
+
+      <!-- F12 — Volume Up -->
+      <div class="key key--fnkey" title="F12 — Volume Up">
+        <svg class="fn-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <polygon points="2,6.2 5,6.2 8.5,3.5 8.5,12.5 5,9.8 2,9.8" fill="currentColor"/>
+          <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+            <path d="M10.8 6.2 a3 3 0 0 1 0 3.6"/>
+            <path d="M12.6 4.5 a5 5 0 0 1 0 7"/>
+          </g>
+        </svg>
+        <span class="fn-tag">F12</span>
+      </div>
+
+      <!-- Touch ID -->
+      <div class="key key--touchid" title="Touch ID" aria-label="Touch ID"></div>
+    </div>
 
     <!-- ── Row 1: Number row + Backspace ─────────────────────────────── -->
     <div class="kbd-row">
@@ -150,10 +307,7 @@
         </div>
       {/each}
       {#if isISO}
-        <!-- ISO Enter top stub — rendered as part of L-shape via grid -->
         <div class="key key--enter-iso-top key--mod" aria-hidden="true"></div>
-      {:else}
-        <!-- ANSI: no extra key here; Enter is on row 3 -->
       {/if}
     </div>
 
@@ -194,7 +348,6 @@
         <div class="key key--lshift-iso key--mod" title="Shift">
           <span class="key__mod-label">shift</span>
         </div>
-        <!-- Extra ISO key between Left Shift and Z -->
         {@const isoChars = getKeyChars("56")}
         <div
           class="key key--char key--iso-extra"
@@ -235,22 +388,41 @@
 
     <!-- ── Row 5: Modifiers + Space ──────────────────────────────────── -->
     <div class="kbd-row kbd-row--space">
-      <div class="key key--fn key--mod"><span class="key__mod-label">fn</span></div>
-      <div class="key key--ctrl key--mod"><span class="key__mod-label">control</span></div>
-      <div class="key key--alt key--mod"><span class="key__mod-label">option</span></div>
+      <div class="key key--fn key--mod" title="Globe / Function">
+        <svg class="key__globe" viewBox="0 0 16 16" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.1">
+            <circle cx="8" cy="8" r="5.3"/>
+            <ellipse cx="8" cy="8" rx="2.1" ry="5.3"/>
+            <line x1="2.7" y1="8" x2="13.3" y2="8"/>
+            <path d="M3.3 5 Q8 6.5 12.7 5"/>
+            <path d="M3.3 11 Q8 9.5 12.7 11"/>
+          </g>
+        </svg>
+      </div>
+      <div class="key key--ctrl key--mod">
+        <span class="key__mod-glyph">⌃</span>
+        <span class="key__mod-label">control</span>
+      </div>
+      <div class="key key--alt key--mod">
+        <span class="key__mod-glyph">⌥</span>
+        <span class="key__mod-label">option</span>
+      </div>
       <div class="key key--cmd key--mod key--cmd-left">
-        <span class="key__cmd-icon" aria-hidden="true">⌘</span>
+        <span class="key__mod-glyph">⌘</span>
         <span class="key__mod-label">command</span>
       </div>
       <div class="key key--space key--mod" title="Space">
         <span class="key__mod-label sr-only">space</span>
       </div>
       <div class="key key--cmd key--mod key--cmd-right">
-        <span class="key__cmd-icon" aria-hidden="true">⌘</span>
+        <span class="key__mod-glyph">⌘</span>
         <span class="key__mod-label">command</span>
       </div>
-      <div class="key key--alt key--mod"><span class="key__mod-label">option</span></div>
-      <!-- Arrow cluster -->
+      <div class="key key--alt key--mod">
+        <span class="key__mod-glyph">⌥</span>
+        <span class="key__mod-label">option</span>
+      </div>
+      <!-- Arrow cluster (inverted T) -->
       <div class="kbd-arrows">
         <div class="key key--arrow key--mod" aria-label="Up Arrow">▲</div>
         <div class="key key--arrow key--mod" aria-label="Left Arrow">◀</div>
@@ -263,65 +435,92 @@
 </div><!-- /kbd-scaler -->
 
 <style>
-  /* ── Design tokens (local, theme-aware) ─────────────────────────────── */
-  .kbd-body {
-    /* Light-mode defaults — Apple Magic Keyboard silver */
-    --kbd-shell:        #c8c8cc;
-    --kbd-shell-border: #a8a8b0;
-    --kbd-shell-shadow: 0 2px 0 #909098, 0 6px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.12);
+  /* ═══════════════════════════════════════════════════════════════════════
+     APPLE MAGIC KEYBOARD — visual replica
+     Light mode: white aluminum shell, soft printed-on keys
+     Dark mode:  Space Black / dark grey tones
+     ═══════════════════════════════════════════════════════════════════════ */
 
-    --key-bg:           #f0f0f4;
+  .kbd-body {
+    /* Light defaults — matches the 2021+ Magic Keyboard photo */
+    --kbd-shell:        #e8e8ec;
+    --kbd-shell-edge:   #c5c5cb;
+    --kbd-shell-shadow:
+      0 1px 0 rgba(255,255,255,0.7) inset,
+      0 -1px 0 rgba(0,0,0,0.04) inset,
+      0 6px 18px rgba(0,0,0,0.10),
+      0 1px 3px rgba(0,0,0,0.07);
+
+    --key-bg:           #fbfbfd;
     --key-bg-top:       #ffffff;
-    --key-border:       rgba(0,0,0,0.14);
-    --key-shadow:       0 2px 0 rgba(0,0,0,0.22), 0 1px 0 rgba(0,0,0,0.1);
-    --key-text:         #1d1d1f;
-    --key-mod-text:     #3a3a3c;
-    --key-mod-size:     9px;
-    --key-hover-bg:     #e2e2e8;
+    --key-border:       rgba(0,0,0,0.08);
+    --key-shadow:
+      0 0.5px 0 rgba(255,255,255,0.95) inset,
+      0 1px 1.5px rgba(0,0,0,0.07);
+    --key-text:         #2a2a2c;
+    --key-mod-text:     #6e6e73;
+    --key-mod-size:     8.5px;
+    --key-glyph-size:   12px;
+    --key-hover-bg:     #f3f3f7;
 
     --key-diff-border:  var(--color-key-different, #e67e00);
     --key-diff-bg:      var(--color-key-different-bg, rgba(230,126,0,0.12));
     --key-diff-text:    var(--color-key-different, #e67e00);
-    --key-dead-underline: rgba(0,0,0,0.4);
+    --key-dead-underline: rgba(0,0,0,0.45);
 
-    /* Base unit — all sizes derived from this */
+    --touchid-bg:       linear-gradient(180deg, #ffffff 0%, #ececf0 100%);
+
+    /* Base unit and rhythm */
     --u: 40px;
     --gap: 5px;
-    --radius-key: 5px;
-    --radius-body: 14px;
+    --radius-key: 8px;
+    --radius-body: 18px;
   }
 
-  /* Dark mode overrides */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .kbd-body {
-      --kbd-shell:        #3a3a3c;
-      --kbd-shell-border: #2c2c2e;
-      --kbd-shell-shadow: 0 2px 0 #1c1c1e, 0 6px 24px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.3);
+      --kbd-shell:        #2a2a2c;
+      --kbd-shell-edge:   #1a1a1c;
+      --kbd-shell-shadow:
+        0 1px 0 rgba(255,255,255,0.05) inset,
+        0 -1px 0 rgba(0,0,0,0.4) inset,
+        0 6px 22px rgba(0,0,0,0.55),
+        0 1px 3px rgba(0,0,0,0.35);
 
-      --key-bg:           #48484a;
+      --key-bg:           #4a4a4c;
       --key-bg-top:       #5a5a5e;
-      --key-border:       rgba(0,0,0,0.5);
-      --key-shadow:       0 2px 0 rgba(0,0,0,0.6), 0 1px 0 rgba(0,0,0,0.35);
+      --key-border:       rgba(0,0,0,0.45);
+      --key-shadow:
+        0 0.5px 0 rgba(255,255,255,0.08) inset,
+        0 1px 1.5px rgba(0,0,0,0.45);
       --key-text:         #f5f5f7;
-      --key-mod-text:     #aeaeb2;
-      --key-hover-bg:     #58585c;
+      --key-mod-text:     #98989d;
+      --key-hover-bg:     #5a5a5e;
       --key-dead-underline: rgba(255,255,255,0.4);
+      --touchid-bg:       linear-gradient(180deg, #5a5a5e 0%, #444446 100%);
     }
   }
 
   :root[data-theme="dark"] .kbd-body {
-    --kbd-shell:        #3a3a3c;
-    --kbd-shell-border: #2c2c2e;
-    --kbd-shell-shadow: 0 2px 0 #1c1c1e, 0 6px 24px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.3);
+    --kbd-shell:        #2a2a2c;
+    --kbd-shell-edge:   #1a1a1c;
+    --kbd-shell-shadow:
+      0 1px 0 rgba(255,255,255,0.05) inset,
+      0 -1px 0 rgba(0,0,0,0.4) inset,
+      0 6px 22px rgba(0,0,0,0.55),
+      0 1px 3px rgba(0,0,0,0.35);
 
-    --key-bg:           #48484a;
+    --key-bg:           #4a4a4c;
     --key-bg-top:       #5a5a5e;
-    --key-border:       rgba(0,0,0,0.5);
-    --key-shadow:       0 2px 0 rgba(0,0,0,0.6), 0 1px 0 rgba(0,0,0,0.35);
+    --key-border:       rgba(0,0,0,0.45);
+    --key-shadow:
+      0 0.5px 0 rgba(255,255,255,0.08) inset,
+      0 1px 1.5px rgba(0,0,0,0.45);
     --key-text:         #f5f5f7;
-    --key-mod-text:     #aeaeb2;
-    --key-hover-bg:     #58585c;
+    --key-mod-text:     #98989d;
+    --key-hover-bg:     #5a5a5e;
     --key-dead-underline: rgba(255,255,255,0.4);
+    --touchid-bg:       linear-gradient(180deg, #5a5a5e 0%, #444446 100%);
   }
 
   /* ── Responsive scaling wrapper ──────────────────────────────────────── */
@@ -330,7 +529,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Let the keyboard shrink gracefully on narrow viewports */
     overflow-x: auto;
     padding: 8px 0;
   }
@@ -340,18 +538,17 @@
     display: inline-flex;
     flex-direction: column;
     gap: var(--gap);
-    padding: 14px 14px 16px;
+    padding: 10px 11px 12px;
     background: var(--kbd-shell);
-    border: 1px solid var(--kbd-shell-border);
+    border: 1px solid var(--kbd-shell-edge);
     border-radius: var(--radius-body);
     box-shadow: var(--kbd-shell-shadow);
     flex-shrink: 0;
-    /* Subtle brushed-metal look via gradient */
     background-image: linear-gradient(
-      175deg,
-      color-mix(in srgb, var(--kbd-shell) 70%, white 30%) 0%,
-      var(--kbd-shell) 40%,
-      color-mix(in srgb, var(--kbd-shell) 90%, black 10%) 100%
+      178deg,
+      color-mix(in srgb, var(--kbd-shell) 80%, white 20%) 0%,
+      var(--kbd-shell) 50%,
+      color-mix(in srgb, var(--kbd-shell) 92%, black 8%) 100%
     );
   }
 
@@ -367,6 +564,11 @@
     align-items: center;
   }
 
+  .kbd-row--fn {
+    align-items: center;
+    margin-bottom: 3px;
+  }
+
   /* ── Base key ────────────────────────────────────────────────────────── */
   .key {
     position: relative;
@@ -376,65 +578,54 @@
     height: var(--u);
     min-width: var(--u);
     border-radius: var(--radius-key);
-    background:
-      linear-gradient(
-        180deg,
-        var(--key-bg-top) 0%,
-        var(--key-bg) 60%
-      );
+    background: linear-gradient(180deg, var(--key-bg-top) 0%, var(--key-bg) 100%);
     border: 1px solid var(--key-border);
     box-shadow: var(--key-shadow);
     color: var(--key-text);
-    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
     cursor: default;
     user-select: none;
     flex-shrink: 0;
     transition: filter 100ms ease, transform 100ms ease;
-    /* Inset highlight on top edge for 3D bevel feel */
-    outline: 1px solid rgba(255,255,255,0.35);
-    outline-offset: -2px;
   }
 
   .key:hover {
-    filter: brightness(1.06);
-    transform: translateY(-1px);
+    filter: brightness(1.04);
+    transform: translateY(-0.5px);
   }
 
   /* ── Character key quadrant layout ───────────────────────────────────── */
   .key--char {
-    font-size: 13px;
+    font-size: 12.5px;
   }
 
-  /* All four label spans are absolutely positioned in their corner */
-  .key__tl,
-  .key__tr,
-  .key__bl,
-  .key__br {
+  .key__tl, .key__tr, .key__bl, .key__br {
     position: absolute;
     line-height: 1;
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 10.5px;
+    font-weight: 400;
+    color: var(--key-text);
   }
 
-  .key__tl { top: 4px;    left: 5px; }
-  .key__tr { top: 4px;    right: 5px; }
-  .key__bl { bottom: 4px; left: 5px; }
-  .key__br { bottom: 4px; right: 5px; }
+  .key__tl { top: 5px;    left: 6px; }
+  .key__tr { top: 5px;    right: 6px; }
+  .key__bl { bottom: 5px; left: 6px; }
+  .key__br { bottom: 5px; right: 6px; }
 
   /* ── Modifier key shared style ───────────────────────────────────────── */
   .key--mod {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--key-bg-top) 90%, var(--kbd-shell) 10%) 0%,
-        color-mix(in srgb, var(--key-bg) 85%, var(--kbd-shell) 15%) 100%
-      );
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--key-bg-top) 92%, var(--kbd-shell) 8%) 0%,
+      color-mix(in srgb, var(--key-bg) 88%, var(--kbd-shell) 12%) 100%
+    );
   }
 
   .key__mod-label {
     font-size: var(--key-mod-size);
-    font-weight: 500;
+    font-weight: 400;
     color: var(--key-mod-text);
     letter-spacing: 0.01em;
     white-space: nowrap;
@@ -442,32 +633,115 @@
     padding: 0 4px;
   }
 
-  /* ── Command key icon ────────────────────────────────────────────────── */
-  .key--cmd {
-    flex-direction: column;
-    gap: 1px;
+  .key__mod-glyph {
+    font-size: var(--key-glyph-size);
+    line-height: 1;
+    color: var(--key-text);
+    font-weight: 400;
   }
 
-  .key__cmd-icon {
-    font-size: 15px;
-    line-height: 1;
+  /* Modifiers with both glyph + label stack vertically */
+  .key--ctrl, .key--alt, .key--cmd {
+    flex-direction: column;
+    gap: 1px;
+    padding-top: 2px;
+  }
+
+  .key--ctrl .key__mod-label,
+  .key--alt .key__mod-label,
+  .key--cmd .key__mod-label {
+    font-size: 7.5px;
+  }
+
+  /* ── Globe (fn) key ──────────────────────────────────────────────────── */
+  .key__globe {
+    width: 14px;
+    height: 14px;
     color: var(--key-text);
   }
 
-  .key--cmd .key__mod-label {
-    font-size: 8px;
+  /* ── Function row (decorative, dimmed) ───────────────────────────────── */
+  .key--fnkey {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    height: calc(var(--u) * 0.62);
+    flex-direction: column;
+    gap: 1px;
+    padding: 3px 0 2px;
+    opacity: 0.62;
+  }
+
+  .key--fnkey:hover {
+    opacity: 0.85;
+  }
+
+  .fn-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--key-text);
+    display: block;
+  }
+
+  .fn-tag {
+    font-size: 6.5px;
+    color: var(--key-mod-text);
+    letter-spacing: 0.04em;
+    line-height: 1;
+    font-weight: 500;
+  }
+
+  .fn-text {
+    font-size: 9px;
+    color: var(--key-mod-text);
+    text-transform: lowercase;
+    letter-spacing: 0.01em;
+    line-height: 1;
+  }
+
+  .key--touchid {
+    flex: 0 0 auto;
+    width: calc(var(--u) * 0.62);
+    height: calc(var(--u) * 0.62);
+    min-width: 0;
+    border-radius: 50%;
+    background: var(--touchid-bg);
+    border: 1px solid var(--key-border);
+    box-shadow:
+      0 0.5px 0 rgba(255,255,255,0.95) inset,
+      0 1px 1.5px rgba(0,0,0,0.07),
+      0 0 0 1px rgba(255,255,255,0.04) inset;
+    opacity: 0.78;
+    position: relative;
+  }
+
+  .key--touchid::after {
+    content: "";
+    position: absolute;
+    inset: 22%;
+    border-radius: 50%;
+    border: 0.5px solid rgba(0,0,0,0.06);
+    background: radial-gradient(circle at 50% 40%, transparent 60%, rgba(0,0,0,0.04) 100%);
+  }
+
+  :root[data-theme="dark"] .key--touchid::after,
+  :root:not([data-theme="light"]) .key--touchid::after {
+    border-color: rgba(255,255,255,0.06);
+    background: radial-gradient(circle at 50% 40%, transparent 60%, rgba(0,0,0,0.25) 100%);
   }
 
   /* ── Highlighted (different from Windows default) ────────────────────── */
   .key--different {
     border-color: var(--key-diff-border) !important;
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--key-bg-top) 80%, var(--key-diff-border) 20%) 0%,
-        color-mix(in srgb, var(--key-bg) 75%, var(--key-diff-border) 25%) 100%
-      ) !important;
-    outline-color: color-mix(in srgb, var(--key-diff-border) 40%, transparent 60%) !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--key-bg-top) 80%, var(--key-diff-border) 20%) 0%,
+      color-mix(in srgb, var(--key-bg) 75%, var(--key-diff-border) 25%) 100%
+    ) !important;
+    box-shadow:
+      0 0.5px 0 rgba(255,255,255,0.85) inset,
+      0 1px 1.5px rgba(0,0,0,0.08),
+      0 0 0 1px color-mix(in srgb, var(--key-diff-border) 30%, transparent 70%) !important;
   }
 
   .key--different .key__tl,
@@ -483,14 +757,14 @@
     content: "";
     position: absolute;
     bottom: 2px;
-    left: 20%;
-    right: 20%;
+    left: 22%;
+    right: 22%;
     height: 2px;
     border-radius: 1px;
     background: var(--key-dead-underline);
   }
 
-  /* ── Accessibility: visually hidden but screen-reader accessible ──────── */
+  /* ── Accessibility ───────────────────────────────────────────────────── */
   .sr-only {
     position: absolute;
     width: 1px;
@@ -501,99 +775,88 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
-     KEY WIDTHS
-     Using calc(N * var(--u) + (N-1) * var(--gap)) for multi-unit keys.
-     1u = var(--u)
+     KEY WIDTHS — calc(N * var(--u) + (N-1) * var(--gap))
      ═══════════════════════════════════════════════════════════════════════ */
 
-  /* Backspace / Delete — 1.5u */
   .key--backspace {
     width: calc(1.5 * var(--u) + 0.5 * var(--gap));
   }
 
-  /* Tab — 1.5u */
   .key--tab {
     width: calc(1.5 * var(--u) + 0.5 * var(--gap));
     justify-content: flex-start;
-    padding-left: 6px;
+    padding-left: 7px;
   }
 
-  /* Caps Lock — 1.75u */
   .key--caps {
     width: calc(1.75 * var(--u) + 0.75 * var(--gap));
     justify-content: flex-start;
-    padding-left: 6px;
+    padding-left: 7px;
   }
 
-  /* Caps Lock LED dot */
   .key--caps::after {
     content: "";
     position: absolute;
-    right: 7px;
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
     width: 4px;
     height: 4px;
     border-radius: 50%;
-    background: rgba(0,0,0,0.2);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.18);
+    box-shadow: inset 0 1px 1.5px rgba(0,0,0,0.25);
   }
 
-  /* ISO Enter — top stub occupies ~1.25u in the top row */
+  /* ISO Enter — top stub */
   .key--enter-iso-top {
     width: calc(1.25 * var(--u) + 0.25 * var(--gap));
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     border-bottom: none;
-    height: calc(var(--u) + 1px); /* extend 1px to overlap gap visually */
-    /* Merge bottom visually with the row below */
-    box-shadow: 2px 0 0 rgba(0,0,0,0.22), -1px 0 0 rgba(0,0,0,0.22);
+    height: calc(var(--u) + 1px);
+    box-shadow:
+      0 0.5px 0 rgba(255,255,255,0.95) inset,
+      1px 0 0 rgba(0,0,0,0.08),
+      -1px 0 0 rgba(0,0,0,0.08);
     z-index: 1;
   }
 
-  /* ISO Enter — bottom key spans ~1.75u and has the label */
   .key--enter-iso-bottom {
     width: calc(1.75 * var(--u) + 0.75 * var(--gap));
     border-top-right-radius: 0;
     justify-content: flex-start;
-    padding-left: 8px;
+    padding-left: 9px;
   }
 
-  /* ANSI Enter — 2.25u */
   .key--enter-ansi {
     width: calc(2.25 * var(--u) + 1.25 * var(--gap));
     justify-content: flex-start;
-    padding-left: 8px;
+    padding-left: 9px;
   }
 
-  /* Left Shift ISO — 1.25u */
   .key--lshift-iso {
     width: calc(1.25 * var(--u) + 0.25 * var(--gap));
     justify-content: flex-start;
-    padding-left: 6px;
+    padding-left: 7px;
   }
 
-  /* ISO extra key — 1u (standard) */
   .key--iso-extra {
     min-width: var(--u);
     width: var(--u);
   }
 
-  /* Left Shift ANSI — 2.25u */
   .key--lshift-ansi {
     width: calc(2.25 * var(--u) + 1.25 * var(--gap));
     justify-content: flex-start;
-    padding-left: 6px;
+    padding-left: 7px;
   }
 
-  /* Right Shift — 2.75u */
   .key--rshift {
     width: calc(2.75 * var(--u) + 1.75 * var(--gap));
     justify-content: flex-end;
-    padding-right: 6px;
+    padding-right: 7px;
   }
 
-  /* Fn, Ctrl — 1.25u */
   .key--fn {
     width: calc(1.25 * var(--u) + 0.25 * var(--gap));
   }
@@ -602,58 +865,38 @@
     width: calc(1.25 * var(--u) + 0.25 * var(--gap));
   }
 
-  /* Option/Alt — 1.25u */
   .key--alt {
     width: calc(1.25 * var(--u) + 0.25 * var(--gap));
   }
 
-  /* Command — 1.5u */
   .key--cmd {
     width: calc(1.5 * var(--u) + 0.5 * var(--gap));
   }
 
-  /* Space bar — 6.25u */
   .key--space {
     flex: 1;
     min-width: calc(6.25 * var(--u) + 5.25 * var(--gap));
   }
 
-  /* ── Arrow cluster ───────────────────────────────────────────────────── */
+  /* ── Arrow cluster (inverted T) ──────────────────────────────────────── */
   .kbd-arrows {
     display: grid;
     grid-template-columns: var(--u) var(--u) var(--u);
-    grid-template-rows: calc(var(--u) * 0.55) calc(var(--u) * 0.55);
-    gap: var(--gap);
-    /* Up arrow center-top, left/down/right on bottom row */
+    grid-template-rows: calc(var(--u) * 0.5) calc(var(--u) * 0.5);
+    gap: 2px;
   }
 
   .key--arrow {
-    font-size: 9px;
+    font-size: 8px;
     min-width: unset;
     width: var(--u);
-    height: calc(var(--u) * 0.55);
+    height: calc(var(--u) * 0.5);
     padding: 0;
     color: var(--key-mod-text);
   }
 
-  /* Up arrow: col 2 of row 1 */
-  .key--arrow:nth-child(1) {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  /* Left arrow: col 1 of row 2 */
-  .key--arrow:nth-child(2) {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  /* Down arrow: col 2 of row 2 */
-  .key--arrow:nth-child(3) {
-    grid-column: 2;
-    grid-row: 2;
-  }
-  /* Right arrow: col 3 of row 2 */
-  .key--arrow:nth-child(4) {
-    grid-column: 3;
-    grid-row: 2;
-  }
+  .key--arrow:nth-child(1) { grid-column: 2; grid-row: 1; }
+  .key--arrow:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .key--arrow:nth-child(3) { grid-column: 2; grid-row: 2; }
+  .key--arrow:nth-child(4) { grid-column: 3; grid-row: 2; }
 </style>

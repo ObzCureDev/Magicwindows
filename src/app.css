@@ -457,94 +457,337 @@ body {
   line-height: 1.45;
 }
 
-/* ── Keyboard Container ────────────────────────────────────────────── */
+/* ── Magic Keyboard 1:1 Replica (Detection page) ─────────────────── */
 
-.keyboard-container {
-  width: 100%;
-  max-width: 720px;
-  padding: 20px;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-}
-
-.keyboard-row {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-.keyboard-row:last-child {
-  margin-bottom: 0;
-}
-
-/* ── Individual Key ────────────────────────────────────────────────── */
-
-.key {
-  display: flex;
+.mk-body {
+  --mk-u: 42px;
+  --mk-gap: 4px;
+  --mk-r: 8px;
+  --mk-fn-h: 26px;
+  --mk-key-bg-light: linear-gradient(180deg, #ffffff 0%, #fbfbfd 100%);
+  --mk-key-bg-dark:  linear-gradient(180deg, #5a5a5e 0%, #4a4a4c 100%);
+  --mk-key-border-light: rgba(0,0,0,0.08);
+  --mk-key-border-dark:  rgba(0,0,0,0.45);
+  --mk-key-shadow-light: 0 0.5px 0 rgba(255,255,255,0.95) inset, 0 1px 1.5px rgba(0,0,0,0.07);
+  --mk-key-shadow-dark:  0 0.5px 0 rgba(255,255,255,0.08) inset, 0 1px 1.5px rgba(0,0,0,0.45);
+  --mk-text-light: #2a2a2c;
+  --mk-text-dark:  #f5f5f7;
+  --mk-mod-light:  #6e6e73;
+  --mk-mod-dark:   #98989d;
+  display: inline-flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 42px;
-  height: 42px;
-  padding: 4px 6px;
-  background: var(--color-key-bg);
-  border: 1px solid var(--color-key-border);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--color-key-text);
-  cursor: default;
-  transition: all var(--transition-fast);
+  gap: var(--mk-gap);
+  padding: 10px 11px 12px;
+  background: linear-gradient(178deg, #f0f0f4 0%, #e8e8ec 50%, #d8d8dc 100%);
+  border: 1px solid #c5c5cb;
+  border-radius: 18px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 -1px 0 rgba(0,0,0,0.04) inset,
+    0 6px 18px rgba(0,0,0,0.10),
+    0 1px 3px rgba(0,0,0,0.07);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-body {
+    background: linear-gradient(178deg, #353537 0%, #2a2a2c 50%, #1f1f21 100%);
+    border-color: #1a1a1c;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05) inset,
+      0 -1px 0 rgba(0,0,0,0.4) inset,
+      0 6px 22px rgba(0,0,0,0.55),
+      0 1px 3px rgba(0,0,0,0.35);
+  }
+}
+:root[data-theme="dark"] .mk-body {
+  background: linear-gradient(178deg, #353537 0%, #2a2a2c 50%, #1f1f21 100%);
+  border-color: #1a1a1c;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 -1px 0 rgba(0,0,0,0.4) inset,
+    0 6px 22px rgba(0,0,0,0.55),
+    0 1px 3px rgba(0,0,0,0.35);
+}
+
+.mk-row { display: flex; gap: var(--mk-gap); align-items: flex-end; }
+
+.mk-key {
   position: relative;
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: var(--mk-u); height: var(--mk-u);
+  border-radius: var(--mk-r);
+  background: var(--mk-key-bg-light);
+  border: 1px solid var(--mk-key-border-light);
+  box-shadow: var(--mk-key-shadow-light);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 13px; font-weight: 400; color: var(--mk-text-light);
+  cursor: default; user-select: none; flex-shrink: 0;
+  transition: filter 100ms ease, transform 100ms ease;
 }
 
-.key:hover {
-  background: color-mix(in srgb, var(--color-key-bg) 80%, var(--color-text) 20%);
-  border-color: color-mix(in srgb, var(--color-key-border) 70%, var(--color-text) 30%);
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-key {
+    background: var(--mk-key-bg-dark);
+    border-color: var(--mk-key-border-dark);
+    box-shadow: var(--mk-key-shadow-dark);
+    color: var(--mk-text-dark);
+  }
+}
+:root[data-theme="dark"] .mk-key {
+  background: var(--mk-key-bg-dark);
+  border-color: var(--mk-key-border-dark);
+  box-shadow: var(--mk-key-shadow-dark);
+  color: var(--mk-text-dark);
 }
 
-.key--different {
-  background: var(--color-key-different-bg);
-  border-color: var(--color-key-different);
-  color: var(--color-key-different);
-  font-weight: 600;
+.mk-key:hover { filter: brightness(1.04); transform: translateY(-0.5px); }
+
+/* Apple modifier glyph (⌃ ⌥ ⌘) stacked above the label */
+.mk-glyph {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--mk-text-light);
+  font-weight: 400;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-glyph { color: var(--mk-text-dark); }
+}
+:root[data-theme="dark"] .mk-glyph { color: var(--mk-text-dark); }
+
+.mk-key--mod1, .mk-key--cmd {
+  flex-direction: column;
+  gap: 1px;
+  padding-top: 2px;
 }
 
-.key--different:hover {
-  background: rgba(255, 159, 10, 0.28);
+/* Globe SVG (replaces "fn" text) */
+.mk-globe {
+  width: 14px;
+  height: 14px;
+  color: var(--mk-text-light);
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-globe { color: var(--mk-text-dark); }
+}
+:root[data-theme="dark"] .mk-globe { color: var(--mk-text-dark); }
 
-.key--active {
-  background: var(--color-key-active-bg);
-  border-color: var(--color-key-active);
-  color: #fff;
-  box-shadow: 0 0 12px var(--color-accent-glow);
+/* Function-row icon container */
+.mk-fn-icon {
+  width: 13px;
+  height: 13px;
+  color: var(--mk-text-light);
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-fn-icon { color: var(--mk-text-dark); }
+}
+:root[data-theme="dark"] .mk-fn-icon { color: var(--mk-text-dark); }
+
+.mk-key--fn {
+  flex-direction: column;
+  gap: 1px;
+  padding: 3px 0 2px;
+  opacity: 0.65;
+}
+.mk-key--fn:hover { opacity: 0.85; }
+.mk-key--fn-esc { opacity: 0.78; }
+
+.mk-key--active {
+  background: var(--color-key-active-bg) !important;
+  border-color: var(--color-key-active) !important;
+  color: #fff !important;
+  box-shadow: 0 0 12px var(--color-accent-glow) !important;
   animation: keyPulse 1.2s ease infinite;
+  outline-color: transparent !important;
 }
 
 @keyframes keyPulse {
-  0%,
-  100% {
-    box-shadow: 0 0 12px var(--color-accent-glow);
-  }
-  50% {
-    box-shadow: 0 0 20px var(--color-accent-glow), 0 0 30px rgba(0, 122, 255, 0.15);
-  }
+  0%, 100% { box-shadow: 0 0 12px var(--color-accent-glow); }
+  50% { box-shadow: 0 0 20px var(--color-accent-glow), 0 0 30px rgba(0, 122, 255, 0.15); }
 }
 
-.key__label {
-  font-size: 14px;
-  line-height: 1;
+.mk-lbl-sm  { font-size: 8.5px; font-weight: 400; color: var(--mk-mod-light); letter-spacing: .01em; }
+.mk-lbl-xs  { font-size: 7.5px; font-weight: 400; color: var(--mk-mod-light); letter-spacing: .01em; }
+.mk-lbl-fn  { font-size: 6.5px; font-weight: 500; color: var(--mk-mod-light); letter-spacing: .04em; line-height: 1; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-lbl-sm,
+  :root:not([data-theme="light"]) .mk-lbl-xs,
+  :root:not([data-theme="light"]) .mk-lbl-fn { color: var(--mk-mod-dark); }
+}
+:root[data-theme="dark"] .mk-lbl-sm,
+:root[data-theme="dark"] .mk-lbl-xs,
+:root[data-theme="dark"] .mk-lbl-fn { color: var(--mk-mod-dark); }
+
+.mk-row--fn { margin-bottom: 3px; align-items: center; }
+.mk-key--fn-esc, .mk-key--fn { height: var(--mk-fn-h); width: var(--mk-u); }
+
+.mk-touchid {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #ececf0 100%);
+  border: 1px solid var(--mk-key-border-light);
+  box-shadow:
+    0 0.5px 0 rgba(255,255,255,0.95) inset,
+    0 1px 1.5px rgba(0,0,0,0.07);
+  flex-shrink: 0;
+  align-self: center;
+  opacity: 0.78;
+  position: relative;
+}
+.mk-touchid::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  border: 0.5px solid rgba(0,0,0,0.06);
+  background: radial-gradient(circle at 50% 40%, transparent 60%, rgba(0,0,0,0.04) 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-touchid {
+    background: linear-gradient(180deg, #5a5a5e 0%, #444446 100%);
+    border-color: var(--mk-key-border-dark);
+  }
+  :root:not([data-theme="light"]) .mk-touchid::after {
+    border-color: rgba(255,255,255,0.06);
+    background: radial-gradient(circle at 50% 40%, transparent 60%, rgba(0,0,0,0.25) 100%);
+  }
+}
+:root[data-theme="dark"] .mk-touchid {
+  background: linear-gradient(180deg, #5a5a5e 0%, #444446 100%);
+  border-color: var(--mk-key-border-dark);
+}
+:root[data-theme="dark"] .mk-touchid::after {
+  border-color: rgba(255,255,255,0.06);
+  background: radial-gradient(circle at 50% 40%, transparent 60%, rgba(0,0,0,0.25) 100%);
 }
 
-.key__sublabel {
-  font-size: 9px;
-  color: var(--color-text-muted);
+.mk-key--delete  { width: calc(1.5 * var(--mk-u) + .5 * var(--mk-gap)); justify-content: flex-end; padding-right: 6px; }
+.mk-key--tab     { width: calc(1.5 * var(--mk-u) + .5 * var(--mk-gap)); justify-content: flex-start; padding-left: 6px; }
+.mk-key--caps    { width: calc(1.8 * var(--mk-u) + .8 * var(--mk-gap)); justify-content: flex-start; padding-left: 6px; }
+.mk-key--lshift  { width: calc(1.25 * var(--mk-u) + .25 * var(--mk-gap)); justify-content: flex-start; padding-left: 6px; }
+.mk-key--rshift  { width: calc(2.75 * var(--mk-u) + 1.75 * var(--mk-gap)); justify-content: flex-end; padding-right: 6px; }
+.mk-key--mod1    { width: calc(1.1 * var(--mk-u)); }
+.mk-key--cmd     { width: calc(1.3 * var(--mk-u) + .3 * var(--mk-gap)); }
+.mk-key--space   { flex: 1; min-width: calc(5 * var(--mk-u)); }
+
+/* ISO Enter — single continuous L-shape.
+   Top stub is a transparent placeholder reserving the slot in the upper row.
+   The bottom key extends UP into that slot via a ::before pseudo-element,
+   so the whole shape renders as one piece (no visible seam between halves). */
+
+.mk-key--enter-top {
+  width: calc(1.25 * var(--mk-u) + .25 * var(--mk-gap));
+  height: var(--mk-u);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+.mk-key--enter-bot {
+  width: calc(1.75 * var(--mk-u) + .75 * var(--mk-gap));
+  border-top-right-radius: 0;
+  justify-content: flex-start;
+  padding-left: 8px;
+  position: relative;
+  overflow: visible;
+  /* Use filter:drop-shadow so the L-shape (parent + ::before) gets one unified shadow */
+  box-shadow: 0 0.5px 0 rgba(255,255,255,0.95) inset;
+  filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.10));
+}
+
+.mk-key--enter-bot::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: calc(100% - 1px);
+  width: calc(1.25 * var(--mk-u) + .25 * var(--mk-gap));
+  height: calc(var(--mk-u) + var(--mk-gap) - 1px);
+  background: inherit;
+  border: 1px solid var(--mk-key-border-light);
+  border-bottom: none;
+  border-top-left-radius: var(--mk-r);
+  border-top-right-radius: var(--mk-r);
+  box-sizing: border-box;
+  box-shadow: 0 0.5px 0 rgba(255,255,255,0.95) inset;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-key--enter-bot {
+    box-shadow: 0 0.5px 0 rgba(255,255,255,0.08) inset;
+    filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.55));
+  }
+  :root:not([data-theme="light"]) .mk-key--enter-bot::before {
+    border-color: var(--mk-key-border-dark);
+    box-shadow: 0 0.5px 0 rgba(255,255,255,0.08) inset;
+  }
+}
+:root[data-theme="dark"] .mk-key--enter-bot {
+  box-shadow: 0 0.5px 0 rgba(255,255,255,0.08) inset;
+  filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.55));
+}
+:root[data-theme="dark"] .mk-key--enter-bot::before {
+  border-color: var(--mk-key-border-dark);
+  box-shadow: 0 0.5px 0 rgba(255,255,255,0.08) inset;
+}
+
+/* Active (pressed) state — Enter must override the active glow correctly */
+.mk-key--enter-bot.mk-key--active {
+  filter: drop-shadow(0 0 8px var(--color-accent-glow));
+  box-shadow: none !important;
+}
+.mk-key--enter-bot.mk-key--active::before {
+  background: var(--color-key-active-bg);
+  border-color: var(--color-key-active);
+}
+
+.mk-key--enter-bot:hover {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.14));
+}
+
+/* Arrows: Apple T-shape inverted cluster */
+.mk-arrows {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-left: 4px;
+}
+.mk-arrow-stack { display: flex; flex-direction: column; gap: 2px; }
+
+.mk-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: var(--mk-key-bg-light);
+  border: 1px solid var(--mk-key-border-light);
+  box-shadow: var(--mk-key-shadow-light);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-arrow {
+    background: var(--mk-key-bg-dark);
+    border-color: var(--mk-key-border-dark);
+    box-shadow: var(--mk-key-shadow-dark);
+  }
+}
+:root[data-theme="dark"] .mk-arrow {
+  background: var(--mk-key-bg-dark);
+  border-color: var(--mk-key-border-dark);
+  box-shadow: var(--mk-key-shadow-dark);
+}
+
+.mk-arrow--l { width: var(--mk-u); height: var(--mk-u); }
+.mk-arrow--h { width: var(--mk-u); height: calc((var(--mk-u) - 2px) / 2); }
+
+.mk-arrow-glyph {
+  font-size: 8px;
+  color: var(--mk-mod-light);
   line-height: 1;
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mk-arrow-glyph { color: var(--mk-mod-dark); }
+}
+:root[data-theme="dark"] .mk-arrow-glyph { color: var(--mk-mod-dark); }
 
 /* ── Progress Bar ──────────────────────────────────────────────────── */
 
