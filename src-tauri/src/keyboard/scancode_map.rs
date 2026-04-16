@@ -92,12 +92,91 @@ pub fn build_scancode_map(toggles: &ModifierToggles) -> Vec<u8> {
     buf
 }
 
-pub fn parse_scancode_map(_bytes: &[u8]) -> Result<Vec<RawScancodePair>, String> {
-    unimplemented!("Task 3")
+/// Parse a raw Scancode Map binary into a list of (new, old) pairs.
+/// Returns an empty list for empty input or a header-only blob.
+pub fn parse_scancode_map(bytes: &[u8]) -> Result<Vec<RawScancodePair>, String> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < 16 {
+        return Err(format!("Scancode Map too short: {} bytes (need >= 16)", bytes.len()));
+    }
+    // Skip 8-byte header, read count (LE u32) at offset 8
+    let count = u32::from_le_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]) as usize;
+    if count == 0 {
+        return Err("Scancode Map count is 0; expected >= 1 (terminator)".to_string());
+    }
+    // Body = count * 4 bytes (the last 4 bytes are the terminator)
+    let body_len = count * 4;
+    let expected_total = 12 + body_len;
+    if bytes.len() < expected_total {
+        return Err(format!(
+            "Scancode Map truncated: header says {} entries (need {} bytes total) but got {}",
+            count, expected_total, bytes.len()
+        ));
+    }
+    let mut pairs = Vec::with_capacity(count.saturating_sub(1));
+    for i in 0..count {
+        let off = 12 + i * 4;
+        let chunk = &bytes[off..off + 4];
+        // Last entry should be the terminator (all zeros) — skip it
+        if i == count - 1 {
+            if chunk != [0u8; 4] {
+                return Err("Scancode Map missing null terminator".to_string());
+            }
+            break;
+        }
+        pairs.push(RawScancodePair {
+            new_code: format!("{:02X}{:02X}", chunk[0], chunk[1]),
+            old_code: format!("{:02X}{:02X}", chunk[2], chunk[3]),
+        });
+    }
+    Ok(pairs)
 }
 
-pub fn derive_state(_pairs: &[RawScancodePair]) -> ModifierState {
-    unimplemented!("Task 3")
+/// Reverse-derive which toggles the user has already enabled, based on the raw
+/// pairs read from the registry. Pairs that don't match any known toggle group
+/// flip `has_external_mappings = true` (used by the UI to warn before overwrite).
+pub fn derive_state(pairs: &[RawScancodePair]) -> ModifierState {
+    fn pair(new: [u8; 2], old: [u8; 2]) -> RawScancodePair {
+        RawScancodePair {
+            new_code: format!("{:02X}{:02X}", new[0], new[1]),
+            old_code: format!("{:02X}{:02X}", old[0], old[1]),
+        }
+    }
+
+    let cmd_ctrl_left  = vec![pair(LCTRL, LWIN), pair(LWIN, LCTRL)];
+    let cmd_ctrl_right = vec![pair(RCTRL, RWIN), pair(RWIN, RCTRL)];
+    let caps           = vec![pair(LCTRL, CAPS)];
+    let option_cmd     = vec![
+        pair(LALT, LWIN), pair(LWIN, LALT),
+        pair(RALT, RWIN), pair(RWIN, RALT),
+    ];
+
+    let pair_set: std::collections::HashSet<&RawScancodePair> = pairs.iter().collect();
+    let group_present = |group: &[RawScancodePair]| group.iter().all(|p| pair_set.contains(p));
+
+    let toggles = ModifierToggles {
+        swap_cmd_ctrl_left:  group_present(&cmd_ctrl_left),
+        swap_cmd_ctrl_right: group_present(&cmd_ctrl_right),
+        caps_to_ctrl:        group_present(&caps),
+        swap_option_cmd:     group_present(&option_cmd),
+    };
+
+    // External = any pair in the registry that isn't part of an active group.
+    let mut accounted: std::collections::HashSet<&RawScancodePair> = std::collections::HashSet::new();
+    if toggles.swap_cmd_ctrl_left  { for p in &cmd_ctrl_left  { accounted.insert(p); } }
+    if toggles.swap_cmd_ctrl_right { for p in &cmd_ctrl_right { accounted.insert(p); } }
+    if toggles.caps_to_ctrl        { for p in &caps           { accounted.insert(p); } }
+    if toggles.swap_option_cmd     { for p in &option_cmd     { accounted.insert(p); } }
+
+    let has_external_mappings = pairs.iter().any(|p| !accounted.contains(p));
+
+    ModifierState {
+        current: toggles,
+        has_external_mappings,
+        raw_entries: pairs.to_vec(),
+    }
 }
 
 #[cfg(test)]
@@ -164,5 +243,99 @@ mod build_tests {
         expected.extend_from_slice(&[0x5C, 0xE0, 0x38, 0xE0]); // RWin ← RAlt
         expected.extend_from_slice(&terminator());
         assert_eq!(bytes, expected);
+    }
+}
+
+#[cfg(test)]
+mod parse_tests {
+    use super::*;
+
+    fn make_pair(new_lo: u8, new_hi: u8, old_lo: u8, old_hi: u8) -> RawScancodePair {
+        RawScancodePair {
+            new_code: format!("{:02X}{:02X}", new_lo, new_hi),
+            old_code: format!("{:02X}{:02X}", old_lo, old_hi),
+        }
+    }
+
+    #[test]
+    fn parse_empty_input_returns_empty_list() {
+        assert_eq!(parse_scancode_map(&[]).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn parse_header_only_blob() {
+        // 8-byte header + count=1 (just terminator) + 4-byte terminator = 16 bytes
+        let bytes = [0u8; 16];
+        let mut bytes_with_count = bytes.to_vec();
+        bytes_with_count[8] = 1; // count = 1
+        assert_eq!(parse_scancode_map(&bytes_with_count).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn parse_caps_to_ctrl_blob() {
+        let mut bytes = vec![0u8; 8];
+        bytes.extend_from_slice(&2u32.to_le_bytes());      // count = 2
+        bytes.extend_from_slice(&[0x1D, 0x00, 0x3A, 0x00]); // LCtrl ← CapsLock
+        bytes.extend_from_slice(&[0u8; 4]);                 // terminator
+        let parsed = parse_scancode_map(&bytes).unwrap();
+        assert_eq!(parsed, vec![make_pair(0x1D, 0x00, 0x3A, 0x00)]);
+    }
+
+    #[test]
+    fn parse_rejects_truncated_input() {
+        // Header says 5 entries but only 1 follows
+        let mut bytes = vec![0u8; 8];
+        bytes.extend_from_slice(&5u32.to_le_bytes());
+        bytes.extend_from_slice(&[0x1D, 0x00, 0x3A, 0x00]);
+        // missing 3 entries + terminator
+        assert!(parse_scancode_map(&bytes).is_err());
+    }
+
+    #[test]
+    fn derive_state_recognizes_caps_only() {
+        let pairs = vec![make_pair(0x1D, 0x00, 0x3A, 0x00)];
+        let state = derive_state(&pairs);
+        assert!(state.current.caps_to_ctrl);
+        assert!(!state.current.swap_cmd_ctrl_left);
+        assert!(!state.has_external_mappings);
+    }
+
+    #[test]
+    fn derive_state_recognizes_cmd_ctrl_left() {
+        let pairs = vec![
+            make_pair(0x1D, 0x00, 0x5B, 0xE0), // LCtrl ← LWin
+            make_pair(0x5B, 0xE0, 0x1D, 0x00), // LWin ← LCtrl
+        ];
+        let state = derive_state(&pairs);
+        assert!(state.current.swap_cmd_ctrl_left);
+        assert!(!state.current.swap_cmd_ctrl_right);
+        assert!(!state.has_external_mappings);
+    }
+
+    #[test]
+    fn derive_state_flags_external_mappings() {
+        // Half a swap pair (only one direction) — not a recognized toggle
+        let pairs = vec![make_pair(0x1D, 0x00, 0x5B, 0xE0)];
+        let state = derive_state(&pairs);
+        assert!(!state.current.swap_cmd_ctrl_left);
+        assert!(state.has_external_mappings);
+    }
+
+    #[test]
+    fn derive_state_recognizes_compound_toggles() {
+        // Cmd↔Ctrl both sides + Caps→Ctrl
+        let pairs = vec![
+            make_pair(0x1D, 0x00, 0x5B, 0xE0),
+            make_pair(0x5B, 0xE0, 0x1D, 0x00),
+            make_pair(0x1D, 0xE0, 0x5C, 0xE0),
+            make_pair(0x5C, 0xE0, 0x1D, 0xE0),
+            make_pair(0x1D, 0x00, 0x3A, 0x00),
+        ];
+        let state = derive_state(&pairs);
+        assert!(state.current.swap_cmd_ctrl_left);
+        assert!(state.current.swap_cmd_ctrl_right);
+        assert!(state.current.caps_to_ctrl);
+        assert!(!state.current.swap_option_cmd);
+        assert!(!state.has_external_mappings);
     }
 }
