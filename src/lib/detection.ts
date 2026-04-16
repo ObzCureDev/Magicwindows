@@ -4,7 +4,7 @@ import type { DetectionCatalogue, DetectionCharEntry, DetectionResponse } from "
  * Returns the set of layoutIds that DO have this char printed on a key.
  */
 export function layoutsWithChar(entry: DetectionCharEntry, candidates: string[]): string[] {
-  throw new Error("not implemented");
+  return candidates.filter((id) => entry.positions[id] !== undefined);
 }
 
 /**
