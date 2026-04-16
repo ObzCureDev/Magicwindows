@@ -9,8 +9,8 @@ export function layoutsWithChar(entry: DetectionCharEntry, candidates: string[])
 
 /**
  * Picks the catalogue entry that produces the smallest worst-case bucket.
- * Scoring: partition `candidates` by entry.positions[layoutId] (or "ABSENT" if missing).
- * The best entry minimizes the size of its largest bucket.
+ * Scoring: partition `candidates` by entry.positions[layoutId][0] (canonical position)
+ * or "ABSENT" if missing. The best entry minimizes the size of its largest bucket.
  * Returns null if no entry distinguishes any two candidates.
  */
 export function pickBestQuestion(
@@ -20,15 +20,15 @@ export function pickBestQuestion(
   if (candidates.length <= 1) return null;
 
   const score = (entry: DetectionCharEntry): number => {
-    // Bucket size by event.code, plus an ABSENT bucket
     const buckets = new Map<string, number>();
     let absent = 0;
     for (const id of candidates) {
-      const pos = entry.positions[id];
-      if (pos === undefined) {
+      const positions = entry.positions[id];
+      if (!positions || positions.length === 0) {
         absent += 1;
       } else {
-        buckets.set(pos, (buckets.get(pos) ?? 0) + 1);
+        const canonical = positions[0];
+        buckets.set(canonical, (buckets.get(canonical) ?? 0) + 1);
       }
     }
     const maxPositionBucket = buckets.size === 0 ? 0 : Math.max(...buckets.values());
@@ -49,9 +49,9 @@ export function pickBestQuestion(
 
 /**
  * Applies a user response to the candidate set and returns the narrowed set.
- * - "key_pressed" with a known eventCode: keep layouts whose entry.positions[id] === eventCode
- * - "no_such_key": keep layouts where entry.positions[id] is undefined (char absent)
- * - "key_pressed" with an unknown eventCode: returns candidates unchanged (caller should treat as "wrong key")
+ * - "key_pressed" with a known eventCode: keep layouts whose positions array includes eventCode
+ * - "no_such_key": keep layouts where positions[id] is undefined (char absent)
+ * - "key_pressed" with an unknown eventCode: returns candidates unchanged (caller treats as "wrong key")
  */
 export function applyResponse(
   entry: DetectionCharEntry,
@@ -62,11 +62,12 @@ export function applyResponse(
     return candidates.filter((id) => entry.positions[id] === undefined);
   }
   // key_pressed
-  const expectedCodes = new Set(Object.values(entry.positions));
-  if (!expectedCodes.has(response.eventCode)) {
+  const allExpected = new Set<string>();
+  for (const arr of Object.values(entry.positions)) for (const code of arr) allExpected.add(code);
+  if (!allExpected.has(response.eventCode)) {
     return candidates; // unknown for this question — caller treats as "wrong key"
   }
-  return candidates.filter((id) => entry.positions[id] === response.eventCode);
+  return candidates.filter((id) => entry.positions[id]?.includes(response.eventCode) === true);
 }
 
 /**
@@ -77,5 +78,5 @@ export function isExpectedPress(
   candidates: string[],
   eventCode: string,
 ): boolean {
-  return candidates.some((id) => entry.positions[id] === eventCode);
+  return candidates.some((id) => entry.positions[id]?.includes(eventCode) === true);
 }

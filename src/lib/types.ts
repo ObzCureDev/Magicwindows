@@ -52,8 +52,14 @@ export type Theme = "light" | "dark" | "system";
 export interface DetectionCharEntry {
   char: string;
   codepoint: string;
-  /** Map from layoutId to the DOM event.code where this char is printed on that layout. */
-  positions: Record<string, string>;
+  /**
+   * Map from layoutId to the list of DOM event.code values where this char may be pressed
+   * on that layout. Multiple positions account for chars printed on more than one key in
+   * the same layout AND Apple-on-Windows hardware quirks (e.g. ISO section-key swap, where
+   * the top-left key reports IntlBackslash instead of Backquote on Apple ISO boards).
+   * The first entry is the canonical position used for question-scoring.
+   */
+  positions: Record<string, string[]>;
 }
 
 export interface DetectionCatalogue {

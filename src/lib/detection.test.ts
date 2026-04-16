@@ -6,19 +6,20 @@ const AT: DetectionCharEntry = {
   char: "@",
   codepoint: "0040",
   positions: {
-    "apple-us-qwerty": "Digit2",
-    "apple-uk-qwerty": "Quote",
-    "apple-fr-azerty": "Backquote",
-    "apple-de-qwertz": "KeyL",
-    "apple-es-qwerty": "Digit2",
-    "apple-it-qwerty": "Semicolon",
+    "apple-us-qwerty": ["Digit2"],
+    "apple-uk-qwerty": ["Quote"],
+    // FR has the Apple ISO section-key alias: canonical Backquote + IntlBackslash fallback
+    "apple-fr-azerty": ["Backquote", "IntlBackslash"],
+    "apple-de-qwertz": ["KeyL"],
+    "apple-es-qwerty": ["Digit2"],
+    "apple-it-qwerty": ["Semicolon"],
   },
 };
 
 const NTILDE: DetectionCharEntry = {
   char: "ñ",
   codepoint: "00f1",
-  positions: { "apple-es-qwerty": "Semicolon" },
+  positions: { "apple-es-qwerty": ["Semicolon"] },
 };
 
 describe("layoutsWithChar", () => {
@@ -59,6 +60,11 @@ describe("applyResponse", () => {
   it("returns candidates unchanged when event.code is unknown for this question", () => {
     const result = applyResponse(AT, all, { kind: "key_pressed", eventCode: "KeyZ" });
     expect(result).toEqual(all);
+  });
+
+  it("accepts an alias position (IntlBackslash for FR @ on Apple ISO hardware)", () => {
+    const result = applyResponse(AT, all, { kind: "key_pressed", eventCode: "IntlBackslash" });
+    expect(result).toEqual(["apple-fr-azerty"]);
   });
 });
 
