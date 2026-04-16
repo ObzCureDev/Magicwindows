@@ -6,6 +6,7 @@
 
 **Install Apple Magic Keyboard layouts on Windows** | **Installer les dispositions Apple Magic Keyboard sur Windows**
 
+[![Download](https://img.shields.io/github/v/release/ObzCureDev/MagicWindows?label=Download&color=007aff)](https://github.com/ObzCureDev/MagicWindows/releases/latest)
 [![Build](https://github.com/ObzCureDev/Magicwindows/actions/workflows/build.yml/badge.svg)](https://github.com/ObzCureDev/Magicwindows/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
@@ -33,7 +34,9 @@ This happens because Apple and Windows use different keyboard layouts for the sa
 
 ### Download | Télécharger
 
-Download the latest installer from [**Releases**](https://github.com/ObzCureDev/Magicwindows/releases).
+> **[Download the latest installer](https://github.com/ObzCureDev/MagicWindows/releases/latest)** (Windows x64 & ARM64)
+>
+> *[Télécharger le dernier installeur](https://github.com/ObzCureDev/MagicWindows/releases/latest)* (Windows x64 & ARM64)
 
 ### Install | Installer
 

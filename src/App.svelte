@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { check } from "@tauri-apps/plugin-updater";
   import { appState } from "./lib/stores";
   import { t } from "./lib/i18n";
   import type { Theme } from "./lib/types";
@@ -42,12 +41,13 @@
 
   onMount(async () => {
     try {
+      const { check } = await import("@tauri-apps/plugin-updater");
       const update = await check();
       if (update) {
         console.log("Update available:", update.version);
       }
     } catch {
-      // Silently ignore update check failures
+      // Silently ignore: plugin unavailable in dev or update check failed
     }
   });
 </script>
