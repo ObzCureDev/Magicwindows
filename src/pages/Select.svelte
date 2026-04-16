@@ -1,18 +1,28 @@
 <script lang="ts">
-  import { appState } from "../lib/stores";
+  import { onMount } from "svelte";
+  import { appState } from "../lib/stores.svelte";
   import { t } from "../lib/i18n";
 
   let search = $state("");
 
   let filteredLayouts = $derived(
-    appState.layouts.filter((layout) => {
-      if (!search.trim()) return true;
-      const q = search.toLowerCase();
-      const name = (layout.name[appState.lang] ?? layout.name["en"] ?? "").toLowerCase();
-      const desc = (layout.description[appState.lang] ?? layout.description["en"] ?? "").toLowerCase();
-      const locale = layout.locale.toLowerCase();
-      return name.includes(q) || desc.includes(q) || locale.includes(q);
-    }),
+    appState.layouts
+      .filter((layout) => {
+        if (!search.trim()) return true;
+        const q = search.toLowerCase();
+        const name = (layout.name[appState.lang] ?? layout.name["en"] ?? "").toLowerCase();
+        const desc = (layout.description[appState.lang] ?? layout.description["en"] ?? "").toLowerCase();
+        const locale = layout.locale.toLowerCase();
+        return name.includes(q) || desc.includes(q) || locale.includes(q);
+      })
+      .sort((a, b) => {
+        // Prioritize current language/locale
+        const aLangMatch = a.locale.startsWith(appState.lang);
+        const bLangMatch = b.locale.startsWith(appState.lang);
+        if (aLangMatch && !bLangMatch) return -1;
+        if (!aLangMatch && bLangMatch) return 1;
+        return 0;
+      }),
   );
 
   function selectLayout(id: string) {
@@ -45,6 +55,12 @@
     );
     return String.fromCodePoint(...codePoints);
   }
+
+  onMount(() => {
+    return () => {
+      appState.detectionFailedMessage = null;
+    };
+  });
 </script>
 
 <div class="page">
@@ -54,6 +70,12 @@
   </div>
 
   <div class="page__content">
+    {#if appState.detectionFailedMessage}
+      <div class="status status--info" role="status">
+        {appState.detectionFailedMessage}
+      </div>
+    {/if}
+
     <input
       class="search-input"
       type="text"
