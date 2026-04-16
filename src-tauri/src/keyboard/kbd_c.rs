@@ -91,8 +91,8 @@ impl CharVal {
         if s == "-1" || s.is_empty() {
             return CharVal::None;
         }
-        let (is_dead, hex) = if s.ends_with('@') {
-            (true, &s[..s.len() - 1])
+        let (is_dead, hex) = if let Some(stripped) = s.strip_suffix('@') {
+            (true, stripped)
         } else {
             (false, s)
         };
