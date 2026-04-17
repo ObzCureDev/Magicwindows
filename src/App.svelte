@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { appState } from "./lib/stores";
+  import { appState } from "./lib/stores.svelte";
   import { t } from "./lib/i18n";
   import type { Theme } from "./lib/types";
   import Welcome from "./pages/Welcome.svelte";
@@ -10,6 +10,7 @@
   import Install from "./pages/Install.svelte";
   import Done from "./pages/Done.svelte";
   import About from "./pages/About.svelte";
+  import Modifiers from "./pages/Modifiers.svelte";
 
   function setLang(lang: "en" | "fr") {
     appState.lang = lang;
@@ -60,6 +61,14 @@
   <div class="top-bar__controls">
     <button
       class="theme-toggle"
+      onclick={() => (appState.page = "modifiers")}
+      title={t(appState.lang, "modifiers.topbarTitle")}
+      aria-label={t(appState.lang, "modifiers.topbarTitle")}
+    >
+      ⌘
+    </button>
+    <button
+      class="theme-toggle"
       onclick={cycleTheme}
       title={appState.theme === "system" ? "System theme" : appState.theme === "dark" ? "Dark" : "Light"}
     >
@@ -100,4 +109,6 @@
   <Done />
 {:else if appState.page === "about"}
   <About />
+{:else if appState.page === "modifiers"}
+  <Modifiers />
 {/if}
