@@ -77,34 +77,38 @@ if (-not (Test-Path -LiteralPath $DllPath)) {{
     throw "Bundled DLL not found at: $DllPath"
 }}
 
-# ── Find or generate the registry key ID ──────────────────────────────────
-# If a previous registration for this exact DLL exists, REUSE its KLID instead of
-# creating a duplicate entry. Without this, every re-install would leave orphan
-# KLIDs in the registry pointing at the same DLL.
-$suffix       = $LocaleId.Substring(4, 4)
+# ── Wipe any existing registrations of this DLL ───────────────────────────
+# Previous installs may have registered one or more KLIDs against the same
+# DLL name (e.g. with the old "Apple French (AZERTY)" Layout Text, or a
+# broken 64-bit-in-SysWOW64 install). To make re-install behave as a clean
+# replace — and to avoid orphan KLIDs piling up — we delete all existing
+# Keyboard Layouts subkeys whose 'Layout File' matches this DLL, and stash
+# the deleted KLIDs in HKLM markers so the user-side activate step can also
+# strip them from HKCU\Keyboard Layout\Preload.
+$suffix        = $LocaleId.Substring(4, 4)
 $kbLayoutsRoot = 'HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts'
-$expectedDll  = "$DllName.dll"
-$layoutId = $null
-$regPath  = $null
+$expectedDll   = "$DllName.dll"
+$staleKlids    = @()
 
 Get-ChildItem -Path $kbLayoutsRoot -ErrorAction SilentlyContinue | ForEach-Object {{
-    if ($layoutId) {{ return }}
     $existingFile = (Get-ItemProperty -LiteralPath $_.PSPath -Name 'Layout File' -ErrorAction SilentlyContinue).'Layout File'
     if ($existingFile -eq $expectedDll) {{
-        $layoutId = $_.PSChildName
-        $regPath  = $_.PSPath
-        Write-Host "Reusing existing KLID $layoutId for $expectedDll"
+        $oldKlid = $_.PSChildName
+        $staleKlids += $oldKlid
+        Write-Host "Removing stale registration: $oldKlid"
+        Remove-Item -LiteralPath $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
     }}
 }}
 
-if (-not $layoutId) {{
-    $prefix = 1
-    do {{
-        $layoutId = 'a{{0:x3}}{{1}}' -f $prefix, $suffix
-        $regPath  = Join-Path $kbLayoutsRoot $layoutId
-        $prefix++
-    }} while (Test-Path -LiteralPath $regPath)
-}}
+# ── Generate a fresh KLID ─────────────────────────────────────────────────
+$layoutId = $null
+$regPath  = $null
+$prefix   = 1
+do {{
+    $layoutId = 'a{{0:x3}}{{1}}' -f $prefix, $suffix
+    $regPath  = Join-Path $kbLayoutsRoot $layoutId
+    $prefix++
+}} while (Test-Path -LiteralPath $regPath)
 
 # Derive unique 4-digit hex Layout Id value
 $existingIds = @()
@@ -134,7 +138,9 @@ if (-not (Test-Path -LiteralPath $markerKey)) {{
 Set-ItemProperty -LiteralPath $markerKey -Name 'LastInstalledKLID'    -Value $layoutId  -Force
 Set-ItemProperty -LiteralPath $markerKey -Name 'LastInstalledLANGID'  -Value $langIdHex -Force
 Set-ItemProperty -LiteralPath $markerKey -Name 'LastInstalledLANGTAG' -Value $langTag   -Force
-Write-Host "Markers written to $markerKey"
+$staleJoined = ($staleKlids -join ',')
+Set-ItemProperty -LiteralPath $markerKey -Name 'StaleKLIDs'           -Value $staleJoined -Force
+Write-Host "Markers written to $markerKey (stale KLIDs: $staleJoined)"
 
 # ── Copy DLL to System32 ───────────────────────────────────────────────────
 # Only the 64-bit DLL is copied to System32. We deliberately do NOT mirror it
@@ -178,10 +184,11 @@ Write-Host 'Keyboard layout installed successfully.'
     log::info!("Layout {} installed successfully", layout.id);
 
     // ── 3. Activate: read markers from HKLM, then add the KLID to the user's input methods.
+    //    Stale KLIDs from the wipe step are also purged from HKCU\Preload + input method tips.
     match read_install_markers_from_registry() {
-        Ok((klid, lang_tag)) => {
-            match activate_for_user(&install_dir, &klid, &lang_tag) {
-                Ok(()) => log::info!("Layout {} activated for current user (KLID {klid}, tag {lang_tag})", layout.id),
+        Ok((klid, lang_tag, stale_klids)) => {
+            match activate_for_user(&install_dir, &klid, &lang_tag, &stale_klids) {
+                Ok(()) => log::info!("Layout {} activated for current user (KLID {klid}, tag {lang_tag}; purged stale: {stale_klids:?})", layout.id),
                 Err(e) => log::warn!("Layout installed but auto-activation failed: {e}"),
             }
         }
@@ -192,18 +199,21 @@ Write-Host 'Keyboard layout installed successfully.'
     Ok(())
 }
 
-/// Read the KLID and language tag the elevated install step stashed in
-/// HKLM:\SOFTWARE\MagicWindows. Unprivileged PowerShell read.
+/// Read the KLID, language tag, and list of stale KLIDs (purged by the install
+/// step) from HKLM:\SOFTWARE\MagicWindows. Returns (klid, langTag, staleKlids).
+/// Unprivileged PowerShell read.
 #[cfg(target_os = "windows")]
-fn read_install_markers_from_registry() -> Result<(String, String), String> {
+fn read_install_markers_from_registry() -> Result<(String, String, Vec<String>), String> {
     use std::process::Command;
     let script = r#"
 $key = 'HKLM:\SOFTWARE\MagicWindows'
 if (-not (Test-Path -LiteralPath $key)) { Write-Output 'NONE'; exit 0 }
 $klid    = (Get-ItemProperty -LiteralPath $key -Name 'LastInstalledKLID'    -ErrorAction SilentlyContinue).LastInstalledKLID
 $langTag = (Get-ItemProperty -LiteralPath $key -Name 'LastInstalledLANGTAG' -ErrorAction SilentlyContinue).LastInstalledLANGTAG
+$stale   = (Get-ItemProperty -LiteralPath $key -Name 'StaleKLIDs'           -ErrorAction SilentlyContinue).StaleKLIDs
 if (-not $klid -or -not $langTag) { Write-Output 'NONE'; exit 0 }
-Write-Output "$klid|$langTag"
+if ($null -eq $stale) { $stale = '' }
+Write-Output "$klid|$langTag|$stale"
 "#;
     let out = Command::new("powershell")
         .args(["-ExecutionPolicy", "Bypass", "-NoProfile", "-Command", script])
@@ -216,20 +226,33 @@ Write-Output "$klid|$langTag"
     if stdout == "NONE" || stdout.is_empty() {
         return Err("HKLM markers absent".to_string());
     }
-    let mut parts = stdout.splitn(2, '|');
-    let klid = parts.next().ok_or("malformed marker output")?.trim().to_string();
-    let tag  = parts.next().ok_or("malformed marker output")?.trim().to_string();
+    let mut parts = stdout.splitn(3, '|');
+    let klid  = parts.next().ok_or("malformed marker output")?.trim().to_string();
+    let tag   = parts.next().ok_or("malformed marker output")?.trim().to_string();
+    let stale = parts.next().unwrap_or("").trim().to_string();
     if klid.is_empty() || tag.is_empty() {
         return Err("empty KLID or LANGTAG in markers".to_string());
     }
-    Ok((klid, tag))
+    let stale_klids: Vec<String> = if stale.is_empty() {
+        Vec::new()
+    } else {
+        stale.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()
+    };
+    Ok((klid, tag, stale_klids))
 }
 
 /// Adds the freshly-installed KLID to the current user's input methods so the
 /// keyboard layout becomes selectable from the language bar without a manual
-/// trip to Windows Settings. Runs un-elevated (HKCU is per-user).
+/// trip to Windows Settings. Also purges any stale KLIDs the install step
+/// wiped out of HKLM, so dead Preload entries and dead InputMethodTips don't
+/// linger in the user profile. Runs un-elevated (HKCU is per-user).
 #[cfg(target_os = "windows")]
-fn activate_for_user(work_dir: &std::path::Path, klid: &str, lang_tag: &str) -> Result<(), String> {
+fn activate_for_user(
+    work_dir: &std::path::Path,
+    klid: &str,
+    lang_tag: &str,
+    stale_klids: &[String],
+) -> Result<(), String> {
     use std::fs;
     use std::process::Command;
 
@@ -243,14 +266,71 @@ fn activate_for_user(work_dir: &std::path::Path, klid: &str, lang_tag: &str) -> 
     let lang_id_hex = &klid[klid.len().saturating_sub(4)..];
     let tip = format!("{lang_id_hex}:{klid}");
 
+    // PowerShell-array literal of single-quoted KLID strings, e.g. @('a001040c','a002040c')
+    // or @() if there are none. We escape single quotes in case (paranoid).
+    let stale_array = if stale_klids.is_empty() {
+        "@()".to_string()
+    } else {
+        let items: Vec<String> = stale_klids
+            .iter()
+            .map(|k| format!("'{}'", k.replace('\'', "''")))
+            .collect();
+        format!("@({})", items.join(","))
+    };
+
     let script = format!(
         r#"
 $ErrorActionPreference = 'Continue'
-$tip      = '{tip}'
-$langTag  = '{lang_tag}'
-$klid     = '{klid}'
+$tip       = '{tip}'
+$langTag   = '{lang_tag}'
+$klid      = '{klid}'
+$staleKlids = {stale_array}
 
-Write-Host "[activate] tip=$tip langTag=$langTag klid=$klid"
+Write-Host "[activate] tip=$tip langTag=$langTag klid=$klid staleKlids=$($staleKlids -join ',')"
+
+# ── Purge stale KLIDs from HKCU\Keyboard Layout\Preload ───────────────────
+# The install step deleted these from HKLM, but their Preload references stay
+# until we explicitly drop them — otherwise Windows logs errors trying to load
+# a non-existent layout file at every logon.
+try {{
+    $preload = 'HKCU:\Keyboard Layout\Preload'
+    if (Test-Path -LiteralPath $preload) {{
+        $names = (Get-Item -LiteralPath $preload).GetValueNames() | Where-Object {{ $_ -match '^\d+$' }}
+        foreach ($name in $names) {{
+            $val = (Get-ItemProperty -LiteralPath $preload -Name $name).$name
+            if ($staleKlids -contains $val) {{
+                Write-Host "[activate] Purging stale Preload entry $name=$val"
+                Remove-ItemProperty -LiteralPath $preload -Name $name -ErrorAction SilentlyContinue
+            }}
+        }}
+    }}
+}} catch {{
+    Write-Host "[activate] Preload purge FAILED: $_"
+}}
+
+# ── Drop stale InputMethodTips from WinUserLanguageList ───────────────────
+try {{
+    $list = Get-WinUserLanguageList
+    $changed = $false
+    foreach ($lang in $list) {{
+        $toRemove = @()
+        foreach ($tip in $lang.InputMethodTips) {{
+            $tipKlid = ($tip -split ':')[1]
+            if ($staleKlids -contains $tipKlid) {{ $toRemove += $tip }}
+        }}
+        foreach ($t in $toRemove) {{
+            Write-Host "[activate] Purging stale tip $t from $($lang.LanguageTag)"
+            $null = $lang.InputMethodTips.Remove($t)
+            $changed = $true
+        }}
+    }}
+    if ($changed) {{
+        Set-WinUserLanguageList $list -Force
+        $list = Get-WinUserLanguageList
+    }}
+}} catch {{
+    Write-Host "[activate] Stale-tip purge FAILED: $_"
+}}
 
 # ── Path A: modern WinUserLanguageList API ────────────────────────────────
 try {{
