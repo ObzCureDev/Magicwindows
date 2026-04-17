@@ -2,6 +2,45 @@
   import { invoke } from "@tauri-apps/api/core";
   import { appState } from "../lib/stores.svelte";
   import { t } from "../lib/i18n";
+  import type { ModifierToggles } from "../lib/types";
+
+  type ModPreset = "none" | "macShortcuts" | "winStrict";
+
+  let selectedPreset = $state<ModPreset>("none");
+  let applying = $state(false);
+  let applied = $state(false);
+  let modError = $state<string | null>(null);
+
+  // Preset → ModifierToggles mapping. Mac shortcuts swaps both sides of
+  // Cmd ↔ Ctrl so Cmd+C/V/X behaves like macOS. Windows-strict keeps Ctrl
+  // at its Windows position but swaps Option ↔ Cmd so the physical key
+  // order matches a PC keyboard (Ctrl-Win-Alt from the spacebar outward).
+  function presetToToggles(p: ModPreset): ModifierToggles {
+    switch (p) {
+      case "macShortcuts":
+        return { swapCmdCtrlLeft: true, swapCmdCtrlRight: true, capsToCtrl: false, swapOptionCmd: false };
+      case "winStrict":
+        return { swapCmdCtrlLeft: false, swapCmdCtrlRight: false, capsToCtrl: false, swapOptionCmd: true };
+      default:
+        return { swapCmdCtrlLeft: false, swapCmdCtrlRight: false, capsToCtrl: false, swapOptionCmd: false };
+    }
+  }
+
+  async function applyPreset() {
+    if (selectedPreset === "none") return;
+    applying = true;
+    modError = null;
+    try {
+      const toggles = presetToToggles(selectedPreset);
+      await invoke("write_scancode_map", { toggles });
+      applied = true;
+    } catch (err) {
+      console.error("write_scancode_map failed:", err);
+      modError = String(err);
+    } finally {
+      applying = false;
+    }
+  }
 
   async function openSettings() {
     try {
@@ -51,6 +90,45 @@
       {t(appState.lang, "done.instructions")}
     </p>
 
+    <!-- ── Optional Mac-style modifier remap ─────────────────────────── -->
+    <div class="mod-offer">
+      <h2 class="mod-offer__title">{t(appState.lang, "done.modOfferTitle")}</h2>
+      <p class="mod-offer__hint">{t(appState.lang, "done.modOfferHint")}</p>
+
+      <label class="mod-opt">
+        <input type="radio" name="mod-preset" value="none" bind:group={selectedPreset} disabled={applied} />
+        <div class="mod-opt__text">
+          <span class="mod-opt__label">{t(appState.lang, "done.modNone")}</span>
+        </div>
+      </label>
+      <label class="mod-opt">
+        <input type="radio" name="mod-preset" value="macShortcuts" bind:group={selectedPreset} disabled={applied} />
+        <div class="mod-opt__text">
+          <span class="mod-opt__label">{t(appState.lang, "done.modMac")}</span>
+          <span class="mod-opt__desc">{t(appState.lang, "done.modMacDesc")}</span>
+        </div>
+      </label>
+      <label class="mod-opt">
+        <input type="radio" name="mod-preset" value="winStrict" bind:group={selectedPreset} disabled={applied} />
+        <div class="mod-opt__text">
+          <span class="mod-opt__label">{t(appState.lang, "done.modWin")}</span>
+          <span class="mod-opt__desc">{t(appState.lang, "done.modWinDesc")}</span>
+        </div>
+      </label>
+
+      {#if modError}
+        <div class="status status--error">{modError}</div>
+      {/if}
+
+      {#if applied}
+        <div class="status status--success">{t(appState.lang, "done.modApplied")}</div>
+      {:else if selectedPreset !== "none"}
+        <button class="btn btn-primary mod-offer__apply" onclick={applyPreset} disabled={applying}>
+          {applying ? t(appState.lang, "done.modApplying") : t(appState.lang, "done.modApply")}
+        </button>
+      {/if}
+    </div>
+
     <div class="page__actions">
       <button class="btn btn-secondary" onclick={openSettings}>
         {t(appState.lang, "install.openSettings")}
@@ -67,3 +145,54 @@
     </div>
   </div>
 </div>
+
+<style>
+  .mod-offer {
+    width: 100%;
+    max-width: 480px;
+    margin: 12px auto 4px;
+    padding: 14px 16px;
+    box-sizing: border-box;
+    background: var(--color-bg-elevated, rgba(255,255,255,0.04));
+    border: 1px solid var(--color-border, rgba(0,0,0,0.15));
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .mod-offer__title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .mod-offer__hint {
+    margin: 0 0 4px;
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    line-height: 1.35;
+  }
+  .mod-opt {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    cursor: pointer;
+    padding: 6px 4px;
+    border-radius: 6px;
+  }
+  .mod-opt:hover { background: rgba(127,127,127,0.06); }
+  .mod-opt input[type="radio"] { margin-top: 3px; }
+  .mod-opt__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .mod-opt__label {
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+  .mod-opt__desc {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    line-height: 1.3;
+  }
+  .mod-offer__apply {
+    align-self: flex-start;
+    margin-top: 4px;
+  }
+</style>
