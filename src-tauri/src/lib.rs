@@ -143,6 +143,14 @@ fn uninstall_layout(app: tauri::AppHandle, id: String) -> Result<(), String> {
     keyboard::install::uninstall_layout(&layout)
 }
 
+/// Cleanly terminate the entire app process. Calling `getCurrentWindow().close()`
+/// from JS only destroys the WebView and can leave the user staring at an empty
+/// window in dev. AppHandle::exit shuts down the Tauri runtime properly.
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 // ── Tauri entry point ───────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -160,6 +168,7 @@ pub fn run() {
             generate_klc,
             install_layout,
             uninstall_layout,
+            quit_app,
             crate::keyboard::modifiers::read_scancode_map,
             crate::keyboard::modifiers::write_scancode_map,
             crate::keyboard::modifiers::clear_scancode_map,

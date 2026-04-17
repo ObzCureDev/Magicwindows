@@ -26,9 +26,9 @@
 
   async function close() {
     try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      await getCurrentWindow().close();
-    } catch {
+      await invoke("quit_app");
+    } catch (e) {
+      console.error("quit_app failed:", e);
       window.close();
     }
   }
