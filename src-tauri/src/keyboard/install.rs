@@ -383,6 +383,46 @@ try {{
     Write-Host "[activate] HKCU Preload write FAILED: $_"
 }}
 
+# ── Force the new layout to become the ACTIVE one in this session ─────────
+# Without this, deleting the old KLID (replace step) leaves Windows on its
+# fallback (US QWERTY) until the user manually picks the new layout from
+# Win+Space. LoadKeyboardLayout + a WM_INPUTLANGCHANGEREQUEST broadcast
+# switches every running top-level window over.
+try {{
+    Add-Type -Namespace 'MagicWindows' -Name 'Kbd' -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+public static extern System.IntPtr LoadKeyboardLayout(string pwszKLID, uint Flags);
+
+[System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+public static extern System.IntPtr SendMessageTimeout(System.IntPtr hWnd, uint Msg, System.IntPtr wParam, System.IntPtr lParam, uint fuFlags, uint uTimeout, out System.UIntPtr lpdwResult);
+'@ -ErrorAction Stop
+
+    $KLF_ACTIVATE       = 0x00000001
+    $KLF_SUBSTITUTE_OK  = 0x00000002
+    $KLF_SETFORPROCESS  = 0x00000100
+    $hkl = [MagicWindows.Kbd]::LoadKeyboardLayout($klid, ($KLF_ACTIVATE -bor $KLF_SUBSTITUTE_OK -bor $KLF_SETFORPROCESS))
+    if ($hkl -eq [System.IntPtr]::Zero) {{
+        Write-Host "[activate] LoadKeyboardLayout returned NULL"
+    }} else {{
+        $HWND_BROADCAST = [System.IntPtr]0xFFFF
+        $WM_INPUTLANGCHANGEREQUEST = 0x0050
+        $INPUTLANGCHANGE_SYSCHARSET = 0x0001
+        $SMTO_ABORTIFHUNG = 0x0002
+        $result = [System.UIntPtr]::Zero
+        $null = [MagicWindows.Kbd]::SendMessageTimeout(
+            $HWND_BROADCAST,
+            $WM_INPUTLANGCHANGEREQUEST,
+            [System.IntPtr]$INPUTLANGCHANGE_SYSCHARSET,
+            $hkl,
+            $SMTO_ABORTIFHUNG,
+            500,
+            [ref]$result)
+        Write-Host "[activate] Broadcast WM_INPUTLANGCHANGEREQUEST hkl=$hkl"
+    }}
+}} catch {{
+    Write-Host "[activate] LoadKeyboardLayout/Broadcast FAILED: $_"
+}}
+
 Write-Host "[activate] done"
 "#
     );
@@ -461,14 +501,25 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 
 $DllName = '{dll}'
 
-# ── Remove registry entries ────────────────────────────────────────────────
+# ── Remove HKLM registry entries and capture removed KLIDs ────────────────
 $regPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts'
+$removedKlids = @()
 $entries = Get-ChildItem $regPath | Where-Object {{
     (Get-ItemProperty $_.PSPath).'Layout File' -eq "$DllName.dll"
 }}
 foreach ($entry in $entries) {{
-    Remove-Item $entry.PSPath -Force
+    $removedKlids += $entry.PSChildName
+    Remove-Item $entry.PSPath -Recurse -Force
 }}
+
+# Stash removed KLIDs in HKLM marker so the user-side post-step can purge HKCU.
+$markerKey = 'HKLM:\SOFTWARE\MagicWindows'
+if (-not (Test-Path -LiteralPath $markerKey)) {{
+    New-Item -Path $markerKey -Force | Out-Null
+}}
+$staleJoined = ($removedKlids -join ',')
+Set-ItemProperty -LiteralPath $markerKey -Name 'LastUninstalledKLIDs' -Value $staleJoined -Force
+Write-Host "Removed KLIDs: $staleJoined"
 
 # ── Remove DLL from System32 ───────────────────────────────────────────────
 $sys32Dll = "$env:SystemRoot\System32\$DllName.dll"
@@ -485,6 +536,73 @@ Write-Host 'Keyboard layout uninstalled successfully.'
 
     run_elevated_ps(&install_dir, "uninstall", &ps_script)?;
     log::info!("Layout {} uninstalled successfully", layout.id);
+
+    // ── User-side HKCU cleanup: purge dead Preload + InputMethodTips. ─────
+    if let Err(e) = purge_hkcu_after_uninstall(&install_dir) {
+        log::warn!("Layout uninstalled but HKCU purge failed: {e}");
+    }
+    Ok(())
+}
+
+/// Reads the LastUninstalledKLIDs marker the elevated uninstall step wrote, then
+/// runs an unprivileged PowerShell to remove every matching value from
+/// HKCU\Keyboard Layout\Preload and from each language's InputMethodTips list.
+/// Without this, Windows logs "layout file missing" errors on every logon for
+/// the dead KLIDs the user previously had loaded.
+#[cfg(target_os = "windows")]
+fn purge_hkcu_after_uninstall(work_dir: &std::path::Path) -> Result<(), String> {
+    use std::process::Command;
+
+    let script = r#"
+$key = 'HKLM:\SOFTWARE\MagicWindows'
+if (-not (Test-Path -LiteralPath $key)) { Write-Host 'No marker key, skipping HKCU purge'; exit 0 }
+$stale = (Get-ItemProperty -LiteralPath $key -Name 'LastUninstalledKLIDs' -ErrorAction SilentlyContinue).LastUninstalledKLIDs
+if (-not $stale) { Write-Host 'No LastUninstalledKLIDs, skipping'; exit 0 }
+$staleKlids = @($stale -split ',' | Where-Object { $_ })
+
+# Purge Preload entries
+try {
+    $preload = 'HKCU:\Keyboard Layout\Preload'
+    if (Test-Path -LiteralPath $preload) {
+        $names = (Get-Item -LiteralPath $preload).GetValueNames() | Where-Object { $_ -match '^\d+$' }
+        foreach ($name in $names) {
+            $val = (Get-ItemProperty -LiteralPath $preload -Name $name).$name
+            if ($staleKlids -contains $val) {
+                Write-Host "Purging Preload $name=$val"
+                Remove-ItemProperty -LiteralPath $preload -Name $name -ErrorAction SilentlyContinue
+            }
+        }
+    }
+} catch { Write-Host "Preload purge failed: $_" }
+
+# Purge InputMethodTips
+try {
+    $list = Get-WinUserLanguageList
+    $changed = $false
+    foreach ($lang in $list) {
+        $toRemove = @()
+        foreach ($tip in $lang.InputMethodTips) {
+            $tipKlid = ($tip -split ':')[1]
+            if ($staleKlids -contains $tipKlid) { $toRemove += $tip }
+        }
+        foreach ($t in $toRemove) {
+            Write-Host "Purging tip $t from $($lang.LanguageTag)"
+            $null = $lang.InputMethodTips.Remove($t)
+            $changed = $true
+        }
+    }
+    if ($changed) { Set-WinUserLanguageList $list -Force }
+} catch { Write-Host "Tip purge failed: $_" }
+"#;
+    let ps_path = work_dir.join("uninstall_purge.ps1");
+    write_ps_with_bom(&ps_path, script).map_err(|e| format!("write purge script: {e}"))?;
+    let out = Command::new("powershell")
+        .args(["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", &ps_path.to_string_lossy()])
+        .output()
+        .map_err(|e| format!("spawn purge powershell: {e}"))?;
+    if !out.status.success() {
+        return Err(format!("HKCU purge failed: {}", String::from_utf8_lossy(&out.stderr).trim()));
+    }
     Ok(())
 }
 
