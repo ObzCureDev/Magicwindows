@@ -46,7 +46,7 @@
     }
   ],
   "keys": {
-    "29": { "vk": "VK_OEM_7",    "cap": "0", "base": "0040", "shift": "0023", "ctrl": "-1", "altgr": "2022", "altgrShift": "-1" },
+    "29": { "vk": "VK_OEM_102",  "cap": "0", "base": "003c", "shift": "003e", "ctrl": "-1", "altgr": "2264", "altgrShift": "2265" },
     "02": { "vk": "VK_1",        "cap": "0", "base": "0026", "shift": "0031", "ctrl": "-1", "altgr": "-1",   "altgrShift": "-1" },
     "03": { "vk": "VK_2",        "cap": "0", "base": "00e9", "shift": "0032", "ctrl": "-1", "altgr": "00eb", "altgrShift": "-1" },
     "04": { "vk": "VK_3",        "cap": "0", "base": "0022", "shift": "0033", "ctrl": "-1", "altgr": "201c", "altgrShift": "201d" },
@@ -86,7 +86,7 @@
     "28": { "vk": "VK_OEM_3",    "cap": "0", "base": "00f9", "shift": "0025", "ctrl": "-1", "altgr": "-1",   "altgrShift": "-1" },
     "2b": { "vk": "VK_OEM_5",    "cap": "0", "base": "0060@", "shift": "00a3", "ctrl": "-1", "altgr": "0040", "altgrShift": "-1" },
 
-    "56": { "vk": "VK_OEM_102",  "cap": "0", "base": "003c", "shift": "003e", "ctrl": "-1", "altgr": "2264", "altgrShift": "2265" },
+    "56": { "vk": "VK_OEM_7",    "cap": "0", "base": "0040", "shift": "0023", "ctrl": "-1", "altgr": "2022", "altgrShift": "-1" },
     "2c": { "vk": "VK_W",        "cap": "1", "base": "0077", "shift": "0057", "ctrl": "-1", "altgr": "-1",   "altgrShift": "-1" },
     "2d": { "vk": "VK_X",        "cap": "1", "base": "0078", "shift": "0058", "ctrl": "-1", "altgr": "-1",   "altgrShift": "-1" },
     "2e": { "vk": "VK_C",        "cap": "1", "base": "0063", "shift": "0043", "ctrl": "-1", "altgr": "00a9", "altgrShift": "-1" },
